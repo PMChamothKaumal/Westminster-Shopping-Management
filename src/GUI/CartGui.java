@@ -1,16 +1,19 @@
 package GUI;
 
+import Online_Shopping_System.User;
+import com.sun.tools.javac.Main;
+
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,12 +24,13 @@ public class CartGui extends JFrame implements ActionListener {
     JLabel label;
     JPanel middlePanel;
     static DefaultTableModel models = new DefaultTableModel();
-    private static ShoppingGui shoppingGui;
+    private ShoppingGui shoppingGui;
 
     public double Total;
     public int electronic;
     public int clothing;
     public double sameCategoryDiscount;
+    public double firstPurchaseDiscount;
    private static JPanel bottomPanel = new JPanel();
     private static JLabel label4 = new JLabel();
     private static JLabel label3 = new JLabel();
@@ -38,11 +42,13 @@ public class CartGui extends JFrame implements ActionListener {
         electronic=0;
         clothing=0;
         sameCategoryDiscount=0;
+        firstPurchaseDiscount=0;
         models.setRowCount(0);
         BufferedReader reader;
         Map<String, Integer> productIdQuantityMap = new HashMap<>();
         Map<String, String[]> productDataMap = new HashMap<>();
 
+        User user1 = new User();
         try {
             reader = new BufferedReader(new FileReader("Cart_Storage.txt"));
             String line = reader.readLine();
@@ -71,7 +77,6 @@ public class CartGui extends JFrame implements ActionListener {
                         electronic++;
                     }
 
-
                 }
                 line = reader.readLine();
             }
@@ -82,7 +87,11 @@ public class CartGui extends JFrame implements ActionListener {
                 String productId = entry.getKey();
                 int qty = entry.getValue();
                 String[] productData = productDataMap.get(productId);
-                Object[] rowData = {productId + "\n" + productData[0] + "\n" + productData[1], qty, qty*Double.parseDouble(productData[2])};
+                Object[] rowData = {
+                        "<html>" + productId + "<br>" + productData[0] + "<br>" + productData[1] + "</html>",
+                        qty,
+                        qty * Double.parseDouble(productData[2])
+                };
                 models.addRow(rowData);
                 Total+=qty*Double.parseDouble(productData[2]);
             }
@@ -97,11 +106,14 @@ public class CartGui extends JFrame implements ActionListener {
             label1.setHorizontalAlignment(SwingConstants.RIGHT);
             bottomPanel.add(label1);
 
-            label2.setText("First Purchase Discount (10%)          -"+Total+" £ ");
-            label2.setFont(labelFont);
-            label2.setPreferredSize(new Dimension(label2.getPreferredSize().width, 40));
-            label2.setHorizontalAlignment(SwingConstants.RIGHT);
-            bottomPanel.add(label2);
+            if (user1.validateFromFile()) {
+                firstPurchaseDiscount = (Total * 10) / 100;
+                label2.setText("First Purchase Discount (10%)          -" + firstPurchaseDiscount + " £ ");
+                label2.setFont(labelFont);
+                label2.setPreferredSize(new Dimension(label2.getPreferredSize().width, 40));
+                label2.setHorizontalAlignment(SwingConstants.RIGHT);
+                bottomPanel.add(label2);
+            }
 
             if (electronic>=3 || clothing>=3){
                 sameCategoryDiscount = (Total*20)/100;
@@ -112,8 +124,7 @@ public class CartGui extends JFrame implements ActionListener {
                 bottomPanel.add(label3);
             }
 
-
-            label4.setText("Final Total      "+(Total-sameCategoryDiscount)+" £ ");
+            label4.setText("Final Total      "+(Total-(sameCategoryDiscount+firstPurchaseDiscount))+" £ ");
             label4.setFont(new Font("MV Boli",Font.BOLD,22));
             label4.setPreferredSize(new Dimension(label4.getPreferredSize().width, 40));
             label4.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -129,31 +140,61 @@ public class CartGui extends JFrame implements ActionListener {
         }
     }
 
-    public CartGui() {
+
+    public CartGui(ShoppingGui shoppingGui, String user) {
+
+        this.shoppingGui = shoppingGui;
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    FileWriter fw = new FileWriter("Cart_Storage.txt", false);
+                    PrintWriter pw = new PrintWriter(fw, false);
+                    pw.flush();
+                    pw.close();
+                    fw.close();
+                } catch (Exception exception) {
+                    System.out.println("Exception have been caught");
+                }
+
+                try {
+                    FileWriter myWriter = new FileWriter("UsersData.txt",true);
+                    myWriter.write(user);
+                    myWriter.close();
+
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+
         this.setSize(880, 650);
         this.setResizable(false);
 
         // Top Panel
         topPanel = new JPanel();
-        topPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        topPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
         JButton b1 = new JButton("Go back");
+        b1.setForeground(Color.WHITE);
+        b1.setBackground(Color.GRAY);
+        b1.setFocusable(false);
         topPanel.add(b1);
 
         b1.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                if ( shoppingGui== null) {
-                    // If the shoppingGui is not created, create a new instance
-                    shoppingGui = new ShoppingGui();
+                if (shoppingGui== null) {
+
+                    shoppingGui.setVisible(true);
                     System.out.println("hello");
                 } else {
-                    // If the shoppingGui is already created, bring it to the front
+
                     shoppingGui.toFront();
                 }
-                // Make the shoppingGui visible and hide the current CartGui instance
+
                 shoppingGui.setVisible(true);
                 CartGui.this.setVisible(false);
                 remove(bottomPanel);
@@ -163,6 +204,7 @@ public class CartGui extends JFrame implements ActionListener {
 
         label = new JLabel("Shopping Cart.");
         label.setFont(new Font("MV Boli", Font.BOLD, 24));
+        label.setBorder(BorderFactory.createEmptyBorder(20, 250, 0, 0));
         topPanel.add(label);
 
         // Middle Panel
@@ -173,6 +215,8 @@ public class CartGui extends JFrame implements ActionListener {
         models.addColumn("Quantity");
         models.addColumn("Price");
         Loads();
+
+        // Assuming 'table' is your JTable
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setPreferredSize(new Dimension(720, 200));

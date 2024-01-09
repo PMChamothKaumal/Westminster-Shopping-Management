@@ -2,8 +2,10 @@ package GUI;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,22 +19,14 @@ public class ShoppingGui extends JFrame implements ActionListener {
     private JLabel label, label2, label1, label3, label4;
     private JComboBox<String> combobox;
     private JButton button;
-    JTable table = new JTable(model);
+    private JTable table = new JTable(model);
     static DefaultTableModel model = new DefaultTableModel();
     private static CartGui cartGui;
+    public boolean i = true;
+    public int col = -1;
 
-    public static void Load(String one){
+    public void Load(String one){
         BufferedReader reader;
-
-        try{
-            FileWriter fw = new FileWriter("Cart_Storage", false);
-            PrintWriter pw = new PrintWriter(fw, false);
-            pw.flush();
-            pw.close();
-            fw.close();
-        }catch(Exception exception){
-            System.out.println("Exception have been caught");
-        }
 
         try {
             reader = new BufferedReader(new FileReader("Westminster_shopping.txt"));
@@ -63,6 +57,7 @@ public class ShoppingGui extends JFrame implements ActionListener {
                             model.addRow(rowData);
                         }
                     }
+
                 }
                 line = reader.readLine();
             }
@@ -74,7 +69,8 @@ public class ShoppingGui extends JFrame implements ActionListener {
         }
     }
 
-    public ShoppingGui() throws HeadlessException {
+
+    public ShoppingGui(String user) throws HeadlessException {
 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.addWindowListener(new WindowAdapter() {
@@ -91,6 +87,7 @@ public class ShoppingGui extends JFrame implements ActionListener {
                 }
             }
         });
+
 
         this.setSize(920, 800);
         this.setResizable(false);
@@ -136,18 +133,16 @@ public class ShoppingGui extends JFrame implements ActionListener {
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 if ( cartGui== null) {
-                    // If the shoppingGui is not created, create a new instance
-                    cartGui = new CartGui();
+                    cartGui = new CartGui(ShoppingGui.this,user);
                 } else {
-                    // If the shoppingGui is already created, bring it to the front
                     cartGui.Loads();
                     cartGui.toFront();
                 }
-                ShoppingGui.this.dispose();
-                // Make the shoppingGui visible and hide the current CartGui instance
-                cartGui.setVisible(true);
+                dispose();
 
+                cartGui.setVisible(true);
             }
         });
 
@@ -162,31 +157,57 @@ public class ShoppingGui extends JFrame implements ActionListener {
         topPanel2.add(label);
         topPanel2.add(combobox);
 
-        // Middle Panel
-        middlePanel = new JPanel();
+        if (i){
+            // Middle Panel
+            middlePanel = new JPanel();
+
+            model.addColumn("Product ID");
+            model.addColumn("Name");
+            model.addColumn("Category");
+            model.addColumn("Price(£)");
+            model.addColumn("Info");
+
+            Load("Product");
+
+            int columnIndexProductID = 0;
+            int columnIndexName = 1;
+            int columnIndexCategory = 2;
+            int columnIndexPrice = 3;
+            int columnIndexInfo = 4;
+
+            int width = 150;
+            int widthInfo = 300;
+
+            TableColumn columnProductID = table.getColumnModel().getColumn(columnIndexProductID);
+            TableColumn columnName = table.getColumnModel().getColumn(columnIndexName);
+            TableColumn columnCategory = table.getColumnModel().getColumn(columnIndexCategory);
+            TableColumn columnPrice = table.getColumnModel().getColumn(columnIndexPrice);
+            TableColumn columnInfo = table.getColumnModel().getColumn(columnIndexInfo);
+
+            columnProductID.setPreferredWidth(width);
+            columnName.setPreferredWidth(width);
+            columnCategory.setPreferredWidth(width);
+            columnPrice.setPreferredWidth(width);
+            columnInfo.setPreferredWidth(widthInfo);
+
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.setPreferredSize(new Dimension(720, 200));
+            table.setRowHeight(10);
+
+            JTableHeader header = table.getTableHeader();
+            header.setPreferredSize(new Dimension(header.getWidth(), 40));
+
+            middlePanel.setLayout(new BorderLayout());
+            middlePanel.add(scrollPane, BorderLayout.CENTER);
 
 
-        model.addColumn("Product ID");
-        model.addColumn("Name");
-        model.addColumn("Category");
-        model.addColumn("Price(£)");
-        model.addColumn("Info");
+            // Adding a horizontal line after the table
+            JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
+            separator.setPreferredSize(new Dimension(middlePanel.getWidth(), 1));
+            middlePanel.add(separator, BorderLayout.SOUTH);
+            middlePanel.setBorder(BorderFactory.createEmptyBorder(20, 35, 0, 35));
+        }
 
-        Load("Product");
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(720, 200));
-        table.setRowHeight(90);
-
-        middlePanel.setLayout(new BorderLayout());
-        middlePanel.add(scrollPane, BorderLayout.CENTER);
-
-
-        // Adding a horizontal line after the table
-        JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
-        separator.setPreferredSize(new Dimension(middlePanel.getWidth(), 1));
-        middlePanel.add(separator, BorderLayout.SOUTH);
-        middlePanel.setBorder(BorderFactory.createEmptyBorder(20, 35, 0, 35));
 
         bottomPanel = new JPanel();
         bottomPanel.setLayout(new BorderLayout());
@@ -198,6 +219,7 @@ public class ShoppingGui extends JFrame implements ActionListener {
         final String[] info = new String[1];
         final String[] category = new String[1];
         final double[] price = new double[1];
+        final int[] qty = new int[1];
         // Assuming you have a JTable named 'table'
 
         table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -265,7 +287,29 @@ public class ShoppingGui extends JFrame implements ActionListener {
                             productDetailsPanel.add(label5);
                         }
 
-                        JLabel label6 = new JLabel("Items Available: ");
+
+                        try {
+                            BufferedReader reader = new BufferedReader(new FileReader("Westminster_shopping.txt"));
+                            String line = reader.readLine();
+                            while (line != null) {
+                                String[] components = line.split(",");
+                                if (components[1].equals(productId[0])){
+                                    qty[0] = Integer.parseInt(components[3]);
+                                }
+                                line = reader.readLine();
+                            }
+                            if (qty[0]==0){
+                                button2.setEnabled(false);
+                            }else {
+                                button2.setEnabled(true);
+                            }
+                        } catch (FileNotFoundException ex) {
+                            throw new RuntimeException(ex);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+
+                        JLabel label6 = new JLabel("Items Available: "+ qty[0]);
                         label6.setFont(labelFont);
                         label6.setPreferredSize(new Dimension(label6.getPreferredSize().width, 16));
                         productDetailsPanel.add(label6);
@@ -307,17 +351,37 @@ public class ShoppingGui extends JFrame implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 boolean addedSuccessfully = addToShoppingCart(productId,productName,price,info,category);
-
+                System.out.println(qty[0]);
                 if (addedSuccessfully) {
-
                     displaySuccessMessage();
                     clearProductDetailsPanel();
                 }
             }
             public boolean addToShoppingCart(String[] productId, String[] productName, double[] price, String[] info, String[] category) {
                 try {
-                    FileWriter myWriter = new FileWriter("Cart_Storage.txt",true);
-                    myWriter.write(productId[0] +","+productName[0] +","+price[0] +","+info[0] +","+category[0]+"\n");
+                    // Read the existing content of the file
+                    BufferedReader reader = new BufferedReader(new FileReader("Westminster_shopping.txt"));
+                    StringBuilder fileContent = new StringBuilder();
+                    String line = reader.readLine();
+
+                    while (line != null) {
+                        String[] components = line.split(",");
+                        if (components.length > 1 && components[1].equals(productId[0])) {
+                            // Increment the quantity by 1
+                            int qty = Integer.parseInt(components[3]) -1;
+                            components[3] = String.valueOf(qty);
+                        }
+                        fileContent.append(String.join(",", components)).append(System.lineSeparator());
+                        line = reader.readLine();
+                    }
+                    reader.close();
+
+                    FileWriter myWriter = new FileWriter("Westminster_shopping.txt");
+                    myWriter.write(fileContent.toString());
+                    myWriter.close();
+
+                    myWriter = new FileWriter("Cart_Storage.txt", true);
+                    myWriter.write(productId[0] + "," + productName[0] + "," + price[0] + "," + info[0] + "," + category[0] + "\n");
                     myWriter.close();
 
                 } catch (IOException e) {
@@ -326,6 +390,7 @@ public class ShoppingGui extends JFrame implements ActionListener {
                 return true;
             }
 
+
             private void clearProductDetailsPanel() {
                 bottomPanel.removeAll();
                 bottomPanel.revalidate();
@@ -333,7 +398,15 @@ public class ShoppingGui extends JFrame implements ActionListener {
             }
 
             private void displaySuccessMessage() {
-                JOptionPane.showMessageDialog(null, "Added successfully to the shopping cart", "Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane optionPane = new JOptionPane("Added successfully to the shopping cart", JOptionPane.INFORMATION_MESSAGE);
+                JDialog dialog = optionPane.createDialog("Success");
+
+                // Set the timer to close the dialog after 2000 milliseconds (2 seconds)
+                Timer timer = new Timer(2000, e -> dialog.dispose());
+                timer.setRepeats(false); // Do not repeat the timer
+                timer.start();
+
+                dialog.setVisible(true);
             }
         });
 
@@ -384,19 +457,15 @@ public class ShoppingGui extends JFrame implements ActionListener {
 
         // Adjust the table row height
         table.setRowHeight(24);
-
         // Add the main panel to the frame
         this.add(mainPanel);
         this.setTitle("Westminster Shopping");
 
         this.setVisible(true);
-
-
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
 
     }
 

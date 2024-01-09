@@ -11,8 +11,17 @@ public class Electronics extends Product{
         return Brand;
     }
 
-    public void setBrand(String Brand) {
-        this.Brand = Brand;
+    public void setBrand(Scanner input) {
+        boolean validInput = true;
+        while (validInput) {
+            String Brand = input.next();
+            if (Brand.matches("[a-zA-Z]+")) {
+                this.Brand = Brand;
+                validInput = false;
+            } else {
+                System.out.print("Invalid input. Please enter valid Brand Name: ");
+            }
+        }
     }
 
     public int getWarrantyPeriod() {
@@ -27,7 +36,7 @@ public class Electronics extends Product{
                 this.WarrantyPeriod = warrantyPeriod;
                 validInput = true;
             } catch (InputMismatchException e) {
-                System.out.println("Invalid input. Please enter a valid integer for Warranty Period.");
+                System.out.print("Please enter a valid value for Warranty Period: ");
                 input.next();
             }
         }

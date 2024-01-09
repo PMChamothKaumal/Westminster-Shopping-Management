@@ -32,8 +32,17 @@ public abstract class Product {
         return ProductName;
     }
 
-    public void setProductName(String ProductName) {
-        this.ProductName = ProductName;
+    public void setProductName(Scanner input) {
+        boolean validInput = true;
+        while (validInput) {
+            String ProductName = input.next();
+            if (ProductName.matches("[a-zA-Z]+")) {
+                this.ProductName = ProductName;
+                validInput = false;
+            } else {
+                System.out.print("Invalid input. Please enter valid product name: ");
+            }
+        }
     }
 
     public int getItemQty() {
@@ -48,7 +57,7 @@ public abstract class Product {
                 this.ItemQty = ItemQty;
                 validInput = true;
             } catch (InputMismatchException e) {
-                System.out.println("Invalid input. Please enter a valid integer for Product Qty.");
+                System.out.print("Invalid input. Please enter a valid Product Qty: ");
                 input.next();
             }
         }

@@ -9,29 +9,12 @@ public class WestminsterShoppingManager implements ShoppingManager {
     static String Pid;
     static Scanner input = new Scanner(System.in);
     public static int i;
-    public static Electronics electronicsList[] = new Electronics[25];
-    public static Clothing[] clothingList = new Clothing[25];
-
-    public static void main(String[] args) {
-        try {
-            File myObj = new File("Westminster_shopping.txt");
-            File myObj2 = new File("Cart_Storage.txt");
-
-            if (myObj.createNewFile()||myObj2.createNewFile()) {
-                System.out.println("File created");
-            } else {
-                System.out.println("File already exists & You can Go Throw ");
-            }
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-        }
-
-        LoadProduct();
-        Menu();
-    }
+    public static Electronics electronicsList[] = new Electronics[50];
+    public static Clothing[] clothingList = new Clothing[50];
+    public int countOfProduct =0;
 
 
-    public static void Menu() {
+    public void Menu() {
 
         Scanner input1 = new Scanner(System.in);
         System.out.println("\nWELCOME TO MANAGING PROCESS....");
@@ -48,14 +31,15 @@ public class WestminsterShoppingManager implements ShoppingManager {
             String option = input1.next();
 
             if (option.equals("1")) {
-                AddProduct();
+                addProduct();
             } else if (option.equals("2")) {
-                DeleteProduct();
+                deleteProduct();
             } else if (option.equals("3")) {
-                PrintProduct();
+                printProductList();
             } else if (option.equals("4")) {
-                SaveFile();
+                saveToFile();
             } else if (option.equals("5")) {
+                countOfProduct=0;
                 System.exit(0);
                 break;
             } else {
@@ -65,15 +49,17 @@ public class WestminsterShoppingManager implements ShoppingManager {
         }
     }
 
-    public static void AddProduct() {
+    @Override
+    public void addProduct() {
         boolean check = true;
         while (check) {
             System.out.print("\nEnter 1 for Electronics, 2 for Clothing: ");
             String Answer = input.next();
 
             if (Answer.equals("1")) {
-
                 for ( i = 0; i < electronicsList.length; i++) {
+                    if (countOfProduct<50){
+                        System.out.println(countOfProduct);
                     if (electronicsList[i] == null){
                         electronicsList[i] = new Electronics();
                         System.out.print("Enter Product Id: ");
@@ -82,19 +68,51 @@ public class WestminsterShoppingManager implements ShoppingManager {
                     }else {
                         i++;
                     }
+                    }else {
+                        System.out.println("You Can't add products, Maximum count is cover!");
+                        boolean go = true;
+                        while (go) {
+                            System.out.print("\nEnter 1 to Main menu: ");
+                            String menu = input.next();
+                            if (menu.equals("1")) {
+                                go = false;
+                                Menu();
+                            } else {
+                                System.out.println("Invalid input");
+                            }
+                        }
+                        break;
+                    }
 
                 }
                 check = false;
             } else if (Answer.equals("2")) {
 
                 for ( i = 0; i < clothingList.length; i++) {
-                    if (clothingList[i] == null) {
-                        clothingList[i] = new Clothing();
-                        System.out.print("Enter Product Id: ");
-                        clothingList[i].setProductId(input.next());
-                        AddClothing(clothingList);
+                    if (countOfProduct<50) {
+                        if (clothingList[i] == null) {
+                            clothingList[i] = new Clothing();
+                            System.out.print("Enter Product Id: ");
+                            clothingList[i].setProductId(input.next());
+                            AddClothing(clothingList);
+                        } else {
+                            i++;
+                        }
                     }else {
-                        i++;
+                        System.out.println("You Can't add products, Maximum count is cover!");
+
+                        boolean go = true;
+                        while (go) {
+                            System.out.print("\nEnter 1 to Main menu: ");
+                            String menu = input.next();
+                            if (menu.equals("1")) {
+                                go = false;
+                                Menu();
+                            } else {
+                                System.out.println("Invalid input");
+                            }
+                        }
+                        break;
                     }
 
                 }
@@ -103,18 +121,18 @@ public class WestminsterShoppingManager implements ShoppingManager {
                 System.out.println("Invalid input Try again!");
             }
         }
-
     }
-
-    public static void DeleteProduct() {
-
-        boolean handler = true;
+    public boolean handler = true;
+    public boolean found = false;
+    @Override
+    public void deleteProduct() {
         while(handler) {
+            found=false;
             System.out.print("Product ID: ");
             Pid = input.next();
-            boolean found = false;
             deleteElectronics(electronicsList);
             deleteClothing(clothingList);
+            System.out.println(found);
 
             if (!found) {
                 System.out.println("Can't find Book!! Try again.");
@@ -122,7 +140,75 @@ public class WestminsterShoppingManager implements ShoppingManager {
         }
     }
 
-    public static void PrintProduct() {
+
+    public  void deleteElectronics(Electronics electronics[]){
+        for (int i = 0; i < electronics.length; i++) {
+            if (electronics[i] != null && Pid.equals(electronics[i].getProductId())) {
+                // Book found, mark as null
+                System.out.println(electronicsList[i].getProductId() + "\n" + electronicsList[i].getProductName() + "\n" + electronicsList[i].getBrand());
+                System.out.println(electronicsList[i].getItemQty() + "\n" + electronicsList[i].getPrice() + "\n" + electronicsList[i].getWarrantyPeriod()+"");
+                electronics[i] = null;
+                found = true;
+                System.out.println("Deleted Successfully!\n");
+                countOfProduct--;
+                Validate("Delete Another Product (Y/N): ");
+                boolean allNull = Arrays.stream(electronics).allMatch(element -> element == null);
+
+                if (allNull) {
+                    System.out.println("Oops Electronic list is empty!! ");
+                    boolean em = true;
+                    while(em){
+                        System.out.print("Enter num '1' to go to Menu page: ");
+                        String empty = input.next();
+                        if(empty.equals("1")){
+                            em = false;
+                            Menu();
+                        }
+                        else{
+                            System.out.println("Invalid Input!! Try again..");
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    public  void deleteClothing(Clothing clothing[]){
+        for (int i = 0; i < clothing.length; i++) {
+            if (clothing[i] != null && Pid.equals(clothing[i].getProductId())) {
+                // Product found, mark as null
+                System.out.println(clothingList[i].getProductId() + "\n" + clothingList[i].getProductName() + "\n" + clothingList[i].getSize());
+                System.out.println(clothingList[i].getItemQty() + "\n" + clothingList[i].getPrice() + "\n" + clothingList[i].getColour()+"");
+                clothing[i] = null;
+                found = true;
+                System.out.println("\nDeleted Successfully!\n");
+                countOfProduct--;
+                Validate("Delete Another Product (Y/N): ");
+                boolean allNull = Arrays.stream(clothing).allMatch(element -> element == null);
+
+                if (allNull) {
+                    System.out.println("Oops Clothing list is empty!! ");
+                    boolean em = true;
+                    while(em){
+                        System.out.print("Enter num '1' to go to Menu page: ");
+                        String empty = input.next();
+                        if(empty.equals("1")){
+                            em = false;
+                            Menu();
+                        }
+                        else{
+                            System.out.println("Invalid Input!! Try again..");
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void printProductList() {
         System.out.print("+");
         Loop();
         System.out.print("\n|");
@@ -168,8 +254,8 @@ public class WestminsterShoppingManager implements ShoppingManager {
         }
     }
 
-    public static void SaveFile() {
-
+    @Override
+    public void saveToFile() {
         try{
             FileWriter fw = new FileWriter("Westminster_shopping.txt", false);
             PrintWriter pw = new PrintWriter(fw, false);
@@ -185,7 +271,7 @@ public class WestminsterShoppingManager implements ShoppingManager {
             for(int j=0; j<electronicsList.length; j++){
                 if(electronicsList[j]!=null){
                     myWriter.write("Electronics"+","+electronicsList[j].getProductId()+","+electronicsList[j].getProductName()+","+
-                           electronicsList[j].getItemQty()+","+electronicsList[j].getPrice()+","+
+                            electronicsList[j].getItemQty()+","+electronicsList[j].getPrice()+","+
                             electronicsList[j].getBrand()+","+electronicsList[j].getWarrantyPeriod()+"\n"
                     );
                 }
@@ -208,10 +294,9 @@ public class WestminsterShoppingManager implements ShoppingManager {
         } catch (IOException e) {
             System.out.println("An error occurred.");
         }
-
     }
 
-    public static void AddElectronics(Electronics electronics[]){
+    public  void AddElectronics(Electronics electronics[]){
         boolean count = false;
         for (int j = 0; j < i; j++) {
             if (electronics[i].getProductId().equals(electronics[j].getProductId())) {
@@ -224,9 +309,9 @@ public class WestminsterShoppingManager implements ShoppingManager {
 
         if (!count) {
             System.out.print("Enter Product Name: ");
-            electronics[i].setProductName(input.next());
+            electronics[i].setProductName(input);
             System.out.print("Enter Product Brand: ");
-            electronics[i].setBrand(input.next());
+            electronics[i].setBrand(input);
             System.out.print("Enter Available Qty: ");
             electronics[i].setItemQty(input);
             System.out.print("Enter Product Price: ");
@@ -237,11 +322,12 @@ public class WestminsterShoppingManager implements ShoppingManager {
 
         if (!count) {
             System.out.println("Added successfully.\n");
+            countOfProduct++;
             Validate("Add another Product (Y/N): ");
         }
     }
 
-    public static void AddClothing(Clothing clothing[]){
+    public  void AddClothing(Clothing clothing[]){
         boolean count = false;
         for (int j = 0; j < i; j++) {
             if (clothing[i].getProductId().equals(clothing[j].getProductId())) {
@@ -254,24 +340,25 @@ public class WestminsterShoppingManager implements ShoppingManager {
 
         if (!count) {
             System.out.print("Enter Product Name: ");
-            clothing[i].setProductName(input.next());
+            clothing[i].setProductName(input);
             System.out.print("Enter Available Qty: ");
             clothing[i].setItemQty(input);
             System.out.print("Enter Product Price: ");
             clothing[i].setPrice(input);
             System.out.print("Enter Product size: ");
-            clothing[i].setSize(input.next());
+            clothing[i].setSize(input);
             System.out.print("Enter Product colour: ");
-            clothing[i].setColour(input.next());
+            clothing[i].setColour(input);
         }
 
         if (!count) {
             System.out.println("Added successfully.\n");
+            countOfProduct++;
             Validate("Add another Product (Y/N): ");
         }
     }
 
-    public static void Validate(String type) {
+    public void Validate(String type) {
         Scanner input2 = new Scanner(System.in);
         boolean check = true;
         while (check) {
@@ -290,39 +377,8 @@ public class WestminsterShoppingManager implements ShoppingManager {
         }
     }
 
-    public static void deleteElectronics(Electronics electronics[]){
-        boolean found = false;
-        for (int i = 0; i < electronics.length; i++) {
-            if (electronics[i] != null && Pid.equals(electronics[i].getProductId())) {
-                // Book found, mark as null
-                System.out.println(electronicsList[i].getProductId() + "\n" + electronicsList[i].getProductName() + "\n" + electronicsList[i].getBrand());
-                System.out.println(electronicsList[i].getItemQty() + "\n" + electronicsList[i].getPrice() + "\n" + electronicsList[i].getWarrantyPeriod()+"\n");
-                electronics[i] = null;
-                found = true;
-                System.out.println("\nDeleted Successfully!\n");
-                Validate("Delete Another Product (Y/N): ");
-                break;
-            }
-        }
-    }
 
-    public static void deleteClothing(Clothing clothing[]){
-        boolean found = false;
-        for (int i = 0; i < clothing.length; i++) {
-            if (clothing[i] != null && Pid.equals(clothing[i].getProductId())) {
-                // Product found, mark as null
-                System.out.println(clothingList[i].getProductId() + "\n" + clothingList[i].getProductName() + "\n" + clothingList[i].getSize());
-                System.out.println(clothingList[i].getItemQty() + "\n" + clothingList[i].getPrice() + "\n" + clothingList[i].getColour()+"\n");
-                clothing[i] = null;
-                found = true;
-                System.out.println("\nDeleted Successfully!\n");
-                Validate("Delete Another Product (Y/N): ");
-                break;
-            }
-        }
-    }
-
-    public static void LoadProduct(){
+    public void LoadProduct(){
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader("Westminster_shopping.txt"));
@@ -345,11 +401,13 @@ public class WestminsterShoppingManager implements ShoppingManager {
                         String brand = components[5].trim();
                         int warrantyPeriod = Integer.parseInt(components[6].trim());
                         electronicsList[i] = new Electronics(productId, productName, itemQty, price, brand, warrantyPeriod);
+                        countOfProduct++;
                         i++;
                     }else {
                         String size = components[5].trim();
                         String colour = components[6].trim();
                         clothingList[j] = new Clothing(productId, productName, itemQty, price,size,colour);
+                        countOfProduct++;
                         j++;
                     }
 
@@ -381,5 +439,6 @@ public class WestminsterShoppingManager implements ShoppingManager {
             }
         }
     }
+
 
 }
